@@ -5,5 +5,9 @@
 # Home page
 GET     /                           controllers.Application.index
 
+GET     /data                       controllers.Sigfox.save(time:Long, data:String)
+
+GET     /chart                      controllers.Sigfox.chart(start:Long?=-1l, end:Long?=-1l, callback:String)
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
