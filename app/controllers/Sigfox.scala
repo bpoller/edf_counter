@@ -1,5 +1,6 @@
 package controllers
 
+import play.api.libs.json
 import play.api.libs.json._
 import play.api.mvc.{Action, Controller}
 import play.api.Play.{configuration, current}
@@ -10,8 +11,20 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 
-
 object Sigfox extends Controller {
+
+  class GroupableSequence(sequence:Seq[Int]){
+    def by(length : Int) : List[Seq[Int]]= sequence.sliding(length, length).toList
+  }
+
+  def sum (s: Seq[Int]): Int = s.foldLeft(0)(_+_)
+
+  def count(s: Seq[Int]): Int = s.foldLeft(0)((sum,_) => sum + 1)
+
+  def average(s: Seq[Int]) : Int = sum(s) / count(s)
+
+  def regroup (sequence : Seq[Int]) : GroupableSequence = new GroupableSequence(sequence)
+
 
   def save(time: Long, data: String) = Action {
     Ok
@@ -20,8 +33,10 @@ object Sigfox extends Controller {
   def chart(start: Long, end: Long, callback: String) = Action.async {
     getRecords(start, end).map {response =>
 
-      val result = response.json.toString()
-      println(result.length/1024/1024)
+      val result : JsArray = response.json.as[JsArray]
+      val values : Seq[Int] = result.value.map(r =>(r \ "values").as[List[Int]]).flatten
+
+      println(regroup(values).by(10).map(sum))
 
       Ok(s"$callback($payLoad);")
     }
@@ -36,7 +51,7 @@ object Sigfox extends Controller {
       case (-1, -1) => "{}"
       case (-1, _) => "{\"time\":{\"$lte\":" + end + "}}"
       case (_, -1) => "{\"time\":{\"$gte\":" + start + "}}"
-      case (a, b) => "{\"time\":{\"$gte\":" + start + ",\"$lte\":" + end + "}}"
+      case (_, _) => "{\"time\":{\"$gte\":" + start + ",\"$lte\":" + end + "}}"
     }
 
     kinveyRequest.withQueryString(("query", query), ("sort", "time")).get()
