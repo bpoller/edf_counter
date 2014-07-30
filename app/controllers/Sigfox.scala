@@ -19,7 +19,7 @@ object Sigfox extends Controller {
 
   def sum (s: Seq[Int]): Int = s.foldLeft(0)(_+_)
 
-  def count(s: Seq[Int]): Int = s.foldLeft(0)((sum,_) => sum + 1)
+  def count(s: Seq[Int]): Int = s.size
 
   def average(s: Seq[Int]) : Int = sum(s) / count(s)
 
@@ -35,8 +35,9 @@ object Sigfox extends Controller {
 
       val result : JsArray = response.json.as[JsArray]
       val values : Seq[Int] = result.value.map(r =>(r \ "values").as[List[Int]]).flatten
+      //val times : Seq[Int] = result.value.map(r =>    (r \ "time"))
 
-      println(regroup(values).by(10).map(sum))
+      println(regroup(values) by 10 map sum)
 
       Ok(s"$callback($payLoad);")
     }
